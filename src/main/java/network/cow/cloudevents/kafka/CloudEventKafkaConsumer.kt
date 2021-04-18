@@ -21,7 +21,7 @@ open class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
 
     private val consumer: KafkaConsumer<String, CloudEvent>
 
-    private val listeners = mutableMapOf<String, Pair<Class<out Message>, (Message) -> Unit>>()
+    private val listeners = mutableMapOf<String, MutableList<Pair<Class<out Message>, (Message) -> Unit>>>()
 
     private var thread: Thread? = null
 
@@ -44,9 +44,11 @@ open class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
                 if (records.isEmpty) continue
                 records.forEach { record ->
                     val event = record.value()
-                    val (type, listener) = listeners[event.type] ?: return@forEach
-                    val message = ProtoAny.parseFrom(event.data.toBytes()).unpack(type)
-                    listener(message)
+                    val pairs = listeners[event.type] ?: return@forEach
+                    pairs.forEach { (type, listener) ->
+                        val message = ProtoAny.parseFrom(event.data.toBytes()).unpack(type)
+                        listener(message)
+                    }
                 }
             }
         }
@@ -58,8 +60,20 @@ open class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
         thread = null
     }
 
-    fun <T : Message> listen(eventType: String, dataType: Class<T>, callback: (T) -> Unit) {
-        listeners[eventType] = dataType to (callback as (Message) -> Unit)
+    fun <T : Message> listen(eventType: String, dataType: Class<T>, callback: (T) -> Unit) : Pair<Class<T>, (T) -> Unit> {
+        val listeners = this.listeners.getOrPut(eventType) { mutableListOf() }
+        val pair = dataType to (callback as (Message) -> Unit)
+        listeners.add(pair)
+        return pair
+    }
+
+    fun unregister(eventType: String, pair: Pair<Class<out Message>, (Message) -> Unit>) {
+        val listeners = this.listeners[eventType] ?: return
+        listeners.remove(pair)
+    }
+
+    fun clear() {
+        this.listeners.clear()
     }
 
 }
