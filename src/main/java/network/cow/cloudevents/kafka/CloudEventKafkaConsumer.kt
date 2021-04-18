@@ -17,7 +17,7 @@ import com.google.protobuf.Any as ProtoAny
 /**
  * @author Benedikt Wüller
  */
-class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
+open class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
 
     private val consumer: KafkaConsumer<String, CloudEvent>
 

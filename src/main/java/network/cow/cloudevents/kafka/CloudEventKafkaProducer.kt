@@ -17,7 +17,7 @@ import java.util.UUID
 /**
  * @author Benedikt Wüller
  */
-class CloudEventKafkaProducer(private val config: ProducerConfig) {
+open class CloudEventKafkaProducer(private val config: ProducerConfig) {
 
     private val producer: KafkaProducer<String, CloudEvent>
 
