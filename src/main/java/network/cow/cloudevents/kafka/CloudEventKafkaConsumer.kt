@@ -2,14 +2,14 @@ package network.cow.cloudevents.kafka
 
 import com.google.protobuf.Message
 import io.cloudevents.CloudEvent
-import io.cloudevents.kafka.CloudEventSerializer
+import io.cloudevents.kafka.CloudEventDeserializer
 import network.cow.cloudevents.kafka.config.ConsumerConfig
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG
 import org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
 import org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG
 import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.apache.kafka.common.serialization.StringSerializer
+import org.apache.kafka.common.serialization.StringDeserializer
 import java.time.Duration
 import java.util.Properties
 import com.google.protobuf.Any as ProtoAny
@@ -29,8 +29,8 @@ open class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
         val properties = Properties()
         properties[BOOTSTRAP_SERVERS_CONFIG] = this.config.brokers.joinToString(",")
         properties[GROUP_ID_CONFIG] = this.config.groupId
-        properties[KEY_DESERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        properties[VALUE_DESERIALIZER_CLASS_CONFIG] = CloudEventSerializer::class.java
+        properties[KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
+        properties[VALUE_DESERIALIZER_CLASS_CONFIG] = CloudEventDeserializer::class.java
 
         consumer = KafkaConsumer(properties)
         consumer.subscribe(this.config.topics)
