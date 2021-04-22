@@ -1,6 +1,7 @@
 package network.cow.cloudevents.kafka
 
 import com.google.protobuf.Message
+import com.google.protobuf.Parser
 import io.cloudevents.CloudEvent
 import io.cloudevents.kafka.CloudEventDeserializer
 import network.cow.cloudevents.kafka.config.ConsumerConfig
@@ -18,6 +19,8 @@ import com.google.protobuf.Any as ProtoAny
  * @author Benedikt Wüller
  */
 open class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
+
+    private val parsers = mutableMapOf<Class<out Message>, Parser<out Message>>()
 
     private val consumer: KafkaConsumer<String, CloudEvent>
 
@@ -46,7 +49,12 @@ open class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
                     val event = record.value()
                     val pairs = listeners[event.type] ?: return@forEach
                     pairs.forEach { (type, listener) ->
-                        val message = ProtoAny.parseFrom(event.data.toBytes()).unpack(type)
+                        val parser = this.parsers.getOrPut(type) {
+                            val method = type.getMethod("parser")
+                            return@getOrPut method.invoke(null) as Parser<out Message>
+                        }
+
+                        val message = parser.parseFrom(event.data.toBytes())
                         listener(message)
                     }
                 }
