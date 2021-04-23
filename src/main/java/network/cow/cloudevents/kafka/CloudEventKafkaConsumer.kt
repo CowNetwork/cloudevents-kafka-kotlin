@@ -49,13 +49,17 @@ open class CloudEventKafkaConsumer(private val config: ConsumerConfig) {
                     val event = record.value()
                     val pairs = listeners[event.type] ?: return@forEach
                     pairs.forEach { (type, listener) ->
-                        val parser = this.parsers.getOrPut(type) {
-                            val method = type.getMethod("parser")
-                            return@getOrPut method.invoke(null) as Parser<out Message>
-                        }
+                        try {
+                            val parser = this.parsers.getOrPut(type) {
+                                val method = type.getMethod("parser")
+                                return@getOrPut method.invoke(null) as Parser<out Message>
+                            }
 
-                        val message = parser.parseFrom(event.data.toBytes())
-                        listener(message)
+                            val message = parser.parseFrom(event.data.toBytes())
+                            listener(message)
+                        } catch (ex: Exception) {
+                            ex.printStackTrace()
+                        }
                     }
                 }
             }
